@@ -36,6 +36,24 @@ Notes
 - The backend is a simple demo server and stores data in `db.json` — not suitable for production.
 - If you want to run in development with auto-reload, use `nodemon`.
 
+Static deployment (GitHub Pages)
+--------------------------------
+
+This project also supports a static-only deployment suitable for GitHub Pages. The frontend can run without the Express backend by using the TMDB API directly and storing user data in `localStorage`.
+
+Steps to deploy to GitHub Pages (recommended):
+
+1. Add a repository secret named `TMDB_API_KEY` with your TMDB API key (Repository → Settings → Secrets).
+2. Push to the `main` branch. A GitHub Actions workflow will build and deploy the `public` folder to GitHub Pages automatically.
+
+If you prefer to test locally without the backend, create `public/js/config.js` with:
+
+```js
+window.TMDB_API_KEY = 'your_tmdb_key_here'
+```
+
+Then open `public/index.html` in a browser (or run a static file server).
+
 Next steps (optional):
 - Replace the simple JSON persistence with a real database (SQLite, Postgres).
 - Add password reset, email verification, or OAuth providers.

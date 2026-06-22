@@ -1,10 +1,11 @@
-const API = '';
-const state = { page:1, query:'', genre:'', token: localStorage.getItem('token') };
+const TMDB_KEY = window.TMDB_API_KEY || 'REPLACE_WITH_YOUR_TMDB_API_KEY';
+const API_BASE = 'https://api.themoviedb.org/3';
+const state = { page:1, query:'', genre:'', user: JSON.parse(localStorage.getItem('cine_user')||'null') };
 
 function el(id){return document.getElementById(id)}
 
 async function fetchTrending(){
-  const r = await fetch('/api/trending');
+  const r = await fetch(`${API_BASE}/trending/movie/week?api_key=${TMDB_KEY}`);
   const j = await r.json();
   return j.results || [];
 }
@@ -22,8 +23,13 @@ function renderCarousel(items){
 
 async function searchMovies(){
   const q = state.query;
-  const params = new URLSearchParams({ q, page: state.page, genre: state.genre });
-  const r = await fetch('/api/search?'+params.toString());
+  let url;
+  if(q){
+    url = `${API_BASE}/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(q)}&page=${state.page}`;
+  }else{
+    url = `${API_BASE}/discover/movie?api_key=${TMDB_KEY}&page=${state.page}` + (state.genre?`&with_genres=${state.genre}`:'');
+  }
+  const r = await fetch(url);
   const j = await r.json();
   renderResults(j.results || []);
 }
@@ -48,10 +54,10 @@ function bindUI(){
   document.addEventListener('click', async (e)=>{
     if(e.target.matches('.btn')){
       const id = e.target.getAttribute('data-id');
-      if(!state.token){ openAuth(); return; }
+      if(!state.user){ openAuth(); return; }
       // fetch movie details to store
-      const r = await fetch(`/api/movie/${id}`); const m = await r.json();
-      await fetch('/api/watchlist', { method:'POST', headers:{'content-type':'application/json','authorization':'Bearer '+state.token}, body: JSON.stringify({ movie: { id: m.id, title: m.title, poster_path: m.poster_path } }) });
+      const r = await fetch(`${API_BASE}/movie/${id}?api_key=${TMDB_KEY}`); const m = await r.json();
+      addToWatchlist(state.user.username, { id: m.id, title: m.title, poster_path: m.poster_path });
       alert('Added to watchlist');
     }
   });
@@ -67,22 +73,38 @@ function bindUI(){
 
 async function submitAuth(){
   const title = el('authTitle').textContent.toLowerCase();
-  const username = el('username').value; const password = el('password').value;
-  if(!username||!password) return alert('Provide credentials');
-  const path = title==='login'?'/api/auth/login':'/api/auth/register';
-  const r = await fetch(path, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ username, password }) });
-  const j = await r.json();
-  if(j.error) return alert(j.error);
-  state.token = j.token; localStorage.setItem('token', j.token);
+  const username = el('username').value; // password ignored in static mode
+  if(!username) return alert('Provide a username');
+  // Simple client-side auth: store username in localStorage
+  const user = { username };
+  state.user = user; localStorage.setItem('cine_user', JSON.stringify(user));
   el('authModal').classList.add('hidden');
-  alert('Authenticated as '+j.user.username);
+  alert('Signed in as '+username);
 }
 
 function openAuth(){ el('authModal').classList.remove('hidden'); el('authTitle').textContent='Login'; }
 
+function addToWatchlist(username, movie){
+  const key = `watchlist_${username}`;
+  const list = JSON.parse(localStorage.getItem(key) || '[]');
+  if(!list.find(m=>String(m.id)===String(movie.id))){ list.push(movie); localStorage.setItem(key, JSON.stringify(list)); }
+}
+
+function getGenres(){
+  return fetch(`${API_BASE}/genre/movie/list?api_key=${TMDB_KEY}`).then(r=>r.json()).then(j=>j.genres||[]);
+}
+
+async function populateGenres(){
+  const genres = await getGenres();
+  const sel = el('genreFilter');
+  genres.forEach(g=>{ const o=document.createElement('option'); o.value=g.id; o.textContent=g.name; sel.appendChild(o); });
+  sel.addEventListener('change', ()=>{ state.genre = sel.value; searchMovies(); });
+}
+
 async function init(){
   bindUI();
   const trending = await fetchTrending(); renderCarousel(trending);
+  populateGenres();
   searchMovies();
 }
 

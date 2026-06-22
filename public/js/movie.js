@@ -2,12 +2,22 @@ function qs(name){
   return new URLSearchParams(location.search).get(name);
 }
 
+const TMDB_KEY = window.TMDB_API_KEY || 'REPLACE_WITH_YOUR_TMDB_API_KEY';
+const API_BASE = 'https://api.themoviedb.org/3';
+
 async function fetchMovie(id){
-  const r = await fetch('/api/movie/'+id); return await r.json();
+  const r = await fetch(`${API_BASE}/movie/${id}?api_key=${TMDB_KEY}&append_to_response=videos,credits`);
+  return await r.json();
 }
 
-async function fetchReviews(id){
-  const r = await fetch('/api/reviews/'+id); const j = await r.json(); return j.reviews||[];
+function fetchLocalReviews(id){
+  const all = JSON.parse(localStorage.getItem('cine_reviews')||'[]');
+  return all.filter(r=>String(r.movieId)===String(id));
+}
+
+function saveLocalReview(review){
+  const all = JSON.parse(localStorage.getItem('cine_reviews')||'[]');
+  all.push(review); localStorage.setItem('cine_reviews', JSON.stringify(all));
 }
 
 function renderMovie(m){
@@ -33,14 +43,16 @@ async function init(){
   if(!id) { document.body.innerHTML='Missing movie id'; return; }
   const m = await fetchMovie(id);
   renderMovie(m);
-  const reviews = await fetchReviews(id);
+  const reviews = fetchLocalReviews(id);
   const ra = document.getElementById('reviewsArea');
   ra.innerHTML = `<h3>Reviews</h3>` + reviews.map(r=>`<div class="card"><strong>${r.username}</strong> • ⭐ ${r.rating}<div>${r.text}</div></div>`).join('');
 
   document.getElementById('addWatch').addEventListener('click', async ()=>{
-    const token = localStorage.getItem('token');
-    if(!token) return alert('Login to add to watchlist');
-    await fetch('/api/watchlist', { method:'POST', headers:{'content-type':'application/json','authorization':'Bearer '+token}, body: JSON.stringify({ movie: { id: m.id, title: m.title, poster_path: m.poster_path } }) });
+    const user = JSON.parse(localStorage.getItem('cine_user')||'null');
+    if(!user) return alert('Login to add to watchlist');
+    const key = `watchlist_${user.username}`;
+    const list = JSON.parse(localStorage.getItem(key)||'[]');
+    if(!list.find(mm=>String(mm.id)===String(m.id))){ list.push({ id: m.id, title: m.title, poster_path: m.poster_path }); localStorage.setItem(key, JSON.stringify(list)); }
     alert('Added to watchlist');
   });
 }

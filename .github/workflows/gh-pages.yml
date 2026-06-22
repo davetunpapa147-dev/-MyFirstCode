@@ -1,0 +1,29 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create config.js from secret
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          mkdir -p public/js
+          if [ -z "$TMDB_API_KEY" ]; then
+            echo "window.TMDB_API_KEY='REPLACE_WITH_YOUR_TMDB_API_KEY';" > public/js/config.js
+          else
+            echo "window.TMDB_API_KEY='${TMDB_API_KEY}';" > public/js/config.js
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
