@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CineSearch — Movies</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="logo">CineSearch</div>
+    <div class="search-bar">
+      <input id="searchInput" placeholder="Search movies, actors, keywords...">
+      <button id="searchBtn">Search</button>
+    </div>
+    <div class="controls">
+      <select id="genreFilter"><option value="">All Genres</option></select>
+      <button id="toggleDark">Dark</button>
+      <button id="authBtn">Login</button>
+      <button id="watchlistBtn">Watchlist</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="carousel" id="trendingCarousel"></section>
+
+    <section class="filters">
+      <div class="filter-left">
+        <h2 id="resultsTitle">Popular Movies</h2>
+      </div>
+    </section>
+
+    <section id="results" class="grid"></section>
+
+    <div id="pagination" class="pagination"></div>
+  </main>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="modal hidden">
+    <div class="modal-content">
+      <h3 id="authTitle">Login</h3>
+      <input id="username" placeholder="Username">
+      <input id="password" type="password" placeholder="Password">
+      <div class="modal-actions">
+        <button id="authSubmit">Submit</button>
+        <button id="authSwitch">Switch to Register</button>
+        <button id="authClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>
